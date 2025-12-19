@@ -1,0 +1,35 @@
+blueprint:
+  name: Sync Lights from Physical Switches Only
+  description: Syncs multiple lights when changed by physical switches (ignores app/automations).
+  domain: automation
+  input:
+    lights:
+      name: Lights to Sync
+      description: Select your lights
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+trigger:
+  - platform: state
+    entity_id: !input lights
+
+condition:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state.context.user_id is none and 
+         trigger.to_state.context.parent_id is none }}
+
+action:
+  - service: light.turn_{{ trigger.to_state.state }}
+    target:
+      entity_id: >-
+        {% set all_lights = expand('!input lights') %}
+        {{ all_lights | rejectattr('entity_id', 'eq', trigger.entity_id) 
+                      | map(attribute='entity_id') | list }}
+    data:
+      brightness: "{{ trigger.to_state.attributes.brightness | default(omit) }}"
+      color_temp: "{{ trigger.to_state.attributes.color_temp | default(omit) }}"
+
+mode: parallel
