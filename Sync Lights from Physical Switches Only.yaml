@@ -1,34 +1,47 @@
 blueprint:
   name: Sync Lights from Physical Switches Only
-  description: Syncs multiple lights when changed by physical switches (ignores app/automations).
+  description: Syncs multiple lights (on/off + brightness) when changed by physical switches. Ignores app/automation changes.
   domain: automation
   input:
     lights:
       name: Lights to Sync
-      description: Select your lights
+      description: Select your lights (physical switch changes will sync all others).
       selector:
         entity:
           domain: light
           multiple: true
 
-trigger:
-  - platform: state
+variables:
+  all_lights: !input lights
+  target_lights: "{{ all_lights | reject('eq', trigger.entity_id) | list }}"
+
+triggers:
+  - trigger: state
     entity_id: !input lights
 
-condition:
+conditions:
   - condition: template
     value_template: >-
       {{ trigger.to_state.context.user_id is none and 
          trigger.to_state.context.parent_id is none }}
 
-action:
-  - service: light.turn_{{ trigger.to_state.state }}
-    target:
-      entity_id: >-
-        {% set all_lights = expand('!input lights') %}
-        {{ all_lights | rejectattr('entity_id', 'eq', trigger.entity_id) 
-                      | map(attribute='entity_id') | list }}
-    data:
-      brightness: "{{ trigger.to_state.attributes.brightness | default(omit) }}"
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'on' }}"
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ target_lights }}"
+            data:
+              brightness: "{{ trigger.to_state.attributes.brightness | default(255) }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'off' }}"
+        sequence:
+          - action: light.turn_off
+            target:
+              entity_id: "{{ target_lights }}"
 
 mode: parallel
