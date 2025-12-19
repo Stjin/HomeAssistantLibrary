@@ -30,6 +30,5 @@ action:
                       | map(attribute='entity_id') | list }}
     data:
       brightness: "{{ trigger.to_state.attributes.brightness | default(omit) }}"
-      color_temp: "{{ trigger.to_state.attributes.color_temp | default(omit) }}"
 
 mode: parallel
