@@ -1,6 +1,6 @@
 blueprint:
   name: Sync Lights from Physical Switches Only
-  description: Syncs multiple lights (on/off + brightness) when changed by physical switches. Ignores app/automation changes.
+  description: Syncs multiple lights (on/off) when changed by physical switches. Ignores app/automation changes.
   domain: automation
   input:
     lights:
@@ -34,8 +34,6 @@ actions:
           - action: light.turn_on
             target:
               entity_id: "{{ target_lights }}"
-            data:
-              brightness: "{{ trigger.to_state.attributes.brightness | default(255) }}"
       - conditions:
           - condition: template
             value_template: "{{ trigger.to_state.state == 'off' }}"
